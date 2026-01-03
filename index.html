@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>API Integration Task — CODTECH INTERNSHIP</title>
+
+  <style>
+    :root{
+      --bg:#0f1113;
+      --card:#1b1d20;
+      --accent:#ff5722;
+      --button:#2196f3;
+      --muted:#9aa3ad;
+      --gap:16px;
+    }
+
+    html,body{height:100%}
+    body {
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      background:var(--bg);
+      color:#f5f7f8;
+      margin:0;
+      padding:0;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      text-align:center;
+      line-height:1.4;
+    }
+
+    header{
+      background: linear-gradient(90deg,var(--accent), #ff7043);
+      padding:18px 12px;
+      font-size:20px;
+      font-weight:700;
+      color:white;
+    }
+
+    .container{
+      max-width:980px;
+      margin:20px auto;
+      padding:20px;
+    }
+
+    .controls{
+      display:flex;
+      gap:var(--gap);
+      justify-content:center;
+      align-items:center;
+      flex-wrap:wrap;
+      margin-bottom:18px;
+    }
+
+    button, select {
+      padding:10px 14px;
+      border:none;
+      background:var(--button);
+      color:white;
+      cursor:pointer;
+      border-radius:8px;
+      font-size:15px;
+    }
+
+    button[disabled]{
+      opacity:0.65;
+      cursor:progress;
+    }
+
+    select{
+      background:#263238;
+      color:white;
+      border-radius:8px;
+      border:1px solid rgba(255,255,255,0.04);
+      cursor: pointer;
+    }
+
+    .meta {
+      color:var(--muted);
+      font-size:14px;
+      margin-top:6px;
+    }
+
+    #result{
+      display:grid;
+      grid-template-columns: repeat(2, minmax(0,1fr));
+      gap:14px;
+      margin-top:10px;
+    }
+
+    .card{
+      background:var(--card);
+      padding:14px;
+      border-radius:10px;
+      text-align:left;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.4);
+      min-height:110px;
+    }
+
+    .card h3{
+      margin:0 0 8px 0;
+      font-size:16px;
+      line-height:1.25;
+      color:#fff;
+    }
+
+    .card p{
+      margin:0;
+      color:#dfe7ea;
+      font-size:14px;
+      opacity:0.95;
+    }
+
+    .status{
+      margin-top:8px;
+      color:var(--muted);
+      font-size:14px;
+      min-height:22px;
+    }
+
+    /* responsive */
+    @media (max-width:780px){
+      #result{ grid-template-columns: 1fr; }
+      .container{ padding:12px; }
+    }
+
+    /* simple spinner */
+    .spinner{
+      display:inline-block;
+      width:18px;
+      height:18px;
+      border:3px solid rgba(255,255,255,0.12);
+      border-top-color:white;
+      border-radius:50%;
+      animation:spin 0.9s linear infinite;
+      vertical-align:middle;
+      margin-right:8px;
+    }
+    @keyframes spin{ to{ transform:rotate(360deg) } }
+
+    /* graceful fallback when JS disabled */
+    noscript .no-js-warning{
+      background:#3b2b2b;
+      color:#ffd7cf;
+      padding:10px;
+      border-radius:8px;
+      margin-bottom:12px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    CODTECH INTERNSHIP TASK - API INTEGRATION
+  </header>
+
+  <main class="container" id="main">
+    <h2 style="margin-top:6px">Latest Posts (Fetched from Public API)</h2>
+
+    <noscript>
+      <div class="no-js-warning">JavaScript is required to fetch remote data — please enable JavaScript.</div>
+    </noscript>
+
+    <div class="controls" aria-hidden="false">
+      <div>
+        <label for="countSelect" class="meta" style="display:block;text-align:left;margin-bottom:6px">Number of posts</label>
+        <select id="countSelect" aria-label="Number of posts to fetch">
+          <option value="5">5</option>
+          <option value="10" selected>10</option>
+          <option value="20">20</option>
+          <option value="50">50</option>
+        </select>
+      </div>
+
+      <div>
+        <button id="fetchBtn" type="button">Fetch Data</button>
+      </div>
+    </div>
+
+    <div class="status" id="status" aria-live="polite" aria-atomic="true"></div>
+
+    <section id="result" role="list" aria-label="Posts list"></section>
+  </main>
+
+  <script>
+    (function(){
+      const API_URL = "https://jsonplaceholder.typicode.com/posts";
+      const fetchBtn = document.getElementById('fetchBtn');
+      const statusEl = document.getElementById('status');
+      const resultEl = document.getElementById('result');
+      const countSelect = document.getElementById('countSelect');
+
+      // Helper to clear results
+      function clearResults(){
+        resultEl.innerHTML = '';
+      }
+
+      // Render posts safely using DOM APIs (avoid innerHTML injection)
+      function renderPosts(posts){
+        clearResults();
+        if(!posts || posts.length === 0){
+          statusEl.textContent = "No posts returned.";
+          return;
+        }
+
+        const fragment = document.createDocumentFragment();
+        posts.forEach(post => {
+          const card = document.createElement('article');
+          card.className = 'card';
+          card.setAttribute('role','listitem');
+          card.tabIndex = 0;
+
+          const h3 = document.createElement('h3');
+          h3.textContent = post.title || 'Untitled';
+          card.appendChild(h3);
+
+          const p = document.createElement('p');
+          p.textContent = post.body || '';
+          card.appendChild(p);
+
+          fragment.appendChild(card);
+        });
+        resultEl.appendChild(fragment);
+        statusEl.textContent = `Showing ${posts.length} post(s).`;
+      }
+
+      // Show status with optional spinner
+      function setLoading(message){
+        statusEl.innerHTML = '<span class="spinner" aria-hidden="true"></span>' + message;
+      }
+
+      // Fetch with timeout via AbortController
+      async function fetchPosts(limit = 10, timeoutMs = 10000){
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => {
+          controller.abort();
+        }, timeoutMs);
+
+        try {
+          const res = await fetch(API_URL, { signal: controller.signal });
+          clearTimeout(timeoutId);
+
+          if(!res.ok){
+            throw new Error(`Server responded ${res.status} ${res.statusText}`);
+          }
+
+          const data = await res.json();
+          // API returns array — slice to requested limit
+          return data.slice(0, limit);
+        } catch (err) {
+          // Normalize abort error
+          if (err.name === 'AbortError') {
+            throw new Error('Request timed out or was aborted.');
+          }
+          throw err;
+        }
+      }
+
+      // Click handler wired to button
+      async function onFetchClick(){
+        const limit = parseInt(countSelect.value, 10) || 10;
+        fetchBtn.disabled = true;
+        setLoading('Loading posts...');
+        try {
+          const posts = await fetchPosts(limit, 10000);
+          renderPosts(posts);
+        } catch (err) {
+          clearResults();
+          statusEl.textContent = `Error: ${err.message || err}`;
+          console.error('Fetch error', err);
+        } finally {
+          fetchBtn.disabled = false;
+        }
+      }
+
+      // Wire event
+      fetchBtn.addEventListener('click', onFetchClick);
+
+      // Optional: fetch automatically on first load (comment/uncomment as desired)
+      // window.addEventListener('load', () => fetchBtn.click());
+
+      // Accessibility: allow Enter key on focused count select to trigger fetch
+      countSelect.addEventListener('keydown', (e) => {
+        if(e.key === 'Enter'){
+          fetchBtn.click();
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
